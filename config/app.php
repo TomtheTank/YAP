@@ -181,6 +181,10 @@ return [
          * HTML & Form...
          */
         Collective\Html\HtmlServiceProvider::class,
+        
+        /*
+         * App...
+         */
     ],
 
     /*

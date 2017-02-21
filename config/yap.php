@@ -9,7 +9,7 @@ return [
     | The Sitename of the programm
     |
     */
-    'sitename' => 'Jobs and Programms',
+    'sitename' => 'YAP - Yet Another HR Programm',
 
     /*
     |--------------------------------------------------------------------------

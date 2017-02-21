@@ -80,10 +80,7 @@ class DashboardController extends Controller {
                             ->join('modules','modules.id','=','module_id')
                             ->select('modules.name','modules.path','is_visible','is_create','is_read','is_edit','is_delete')
                             ->get();
-             
-             var_dump($roles);
-             dd();
-             
+ 
              // get photo
              $photo = ($user->photo) ? asset($user->photo) : url('/images/photo') . 'default';            
              

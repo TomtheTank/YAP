@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
+use Kalnoy\Nestedset\NestedSet;
+
 use App\Models\Menu;
 
 class CreateMenusTable extends Migration
@@ -23,15 +25,13 @@ class CreateMenusTable extends Migration
                 $table->dateTime('deleted_at')->nullable()->index();
                 $table->integer('published_by')->unsigned()->nullable()->index();
                 $table->dateTime('published_at')->nullable()->index();
-                $table->integer('ordering')->default(1)->index();
-                $table->boolean('is_dashboard')->default(false)->index();
+                NestedSet::columns($table);
                 $table->integer('privilege_id')->index();
-                $table->string('name')->nullable();
-                $table->integer('type')->default();
-                $table->string('path');
+                $table->string('name');
+                $table->integer('type')->nullable()->default(Menu::TYPE_URL);
+                $table->integer('position')->default(Menu::POSITION_TOPMENU)->index();
+                $table->string('path')->nullable();
                 $table->string('css');
-                $table->string('icon');
-                $table->integer('parent_id')->nullable();
         });
     }
 

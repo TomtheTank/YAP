@@ -7,8 +7,10 @@ namespace App\Models;
  */
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
-//use \App\Library\Database\Eloquent\AModel;
-use App\Model\Privilege;
+
+use Kalnoy\Nestedset\NodeTrait;
+
+use App\Models\Privilege;
 
 /**
  * Description of Menu
@@ -16,12 +18,20 @@ use App\Model\Privilege;
  * @author thoma
  */
 class Menu extends Model {
+      use NodeTrait;
+
+      // Type
+      const TYPE_PARENT_MENU          = 0;
       const TYPE_PATH                 = 1;
       const TYPE_ROUTE                = 2;
       const TYPE_CONTROLLERS_AND_MENU = 3;
       const TYPE_MODULE               = 4;
       const TYPE_STATISTIC            = 5;
       const TYPE_URL                  = 6;
+      
+      // Position
+      const POSITION_SIDEMENU         = 1;
+      const POSITION_TOPMENU          = 2;
       
       /**
        * the datatable
@@ -31,42 +41,67 @@ class Menu extends Model {
       public $table = 'menus';
       
       /**
-       * get the menu for the sidebar
+       * load the menu items for the sidebar
+       * 
+       * @return array | null
+       */
+      public static function getSideMenuItems() {
+             // get menu from database
+             return Menu::where('privilege_id', Privilege::getCurrentID())          
+                          ->where('position', Menu::POSITION_SIDEMENU)
+                          ->whereNotNull('published_at')
+                          ->orderby('_lft', 'asc')
+                          ->get();
+      }
+      
+      /**
+       * get the sidemenu as tree
        * 
        * @return array | null
        */
       public static function getSideMenu() {
-             // get menu from database
-             $menu = Menu::where('privilege_id', Privilege::getCurrentID())          
-                         ->where('is_dashboard', 1)
-                         ->whereNotNull('published_at')
-                         ->first();
-             
-             // replace url with real url
-             if ( !is_null($menu) ) {
-                switch ($menu->type) {
-                       case Menu::TYPE_ROUTE:
-                           $url = route($menu->path);
-                           break;
+            $menues = Menu::getSideMenuItems();
+//             $createMenu = function ( $tree = array(array('name'=>'','depth'=>'', 'lft'=>'','rgt'=>''))){
+            $current_depth  = 0;
+            $counter        = 0;
+            $result         = ''; // '<ul>';
+            $start          = true;
 
-                       case Menu::TYPE_CONTROLLERS_AND_MENU:
-                            $url = action($menu->path);
-                            break;
+            foreach($menues as $menuitem) {
+                $depth      = $menuitem['depth'];
+                $name       = $menuitem['name'];
+                $is_node    = $menuitem['_rgt'] - $menuitem['_lft'] > 1;
+                $current    = (url()->current() == $menuitem['path']) ? ' class="active"' : ''; 
 
-                       case Menu::TYPE_MODULE:
-                       case Menu::TYPE_STATISTIC:
-                           $url = ''; // self::adminPath($menu->path);
-                           break;	  			
-
-                       case Menu::TYPE_URL:
-                       default:
-                           $url = $menu->path;
-                           break;
+                if ($depth == $current_depth){
+                    if($counter > 0) $result .= '</li>';
                 }
-                
-                @$menu->url = $url;  
-             }
+                elseif ($depth > $current_depth){
+                    if ( $start ) {
+                        $class = 'sidebar-menu';
+                        $start = !$start;
+                    } else {
+                        $class = 'treeview-menu';
+                    }
 
-             return $menu;
+                    $result .= '<ul class="' . $class . '">';
+                    $current_depth = $current_depth + ($depth - $current_depth);
+                }
+                elseif($depth < $current_depth){
+                    $result .= str_repeat('</li></ul>',$current_depth - $depth).'</li>';
+                    $current_depth = $current_depth - ($current_depth - $depth);
+                }
+
+                $result .= '<li' . $current .  '><a href="';
+                $result .= ($is_node) ? '#' : $menuitem['path'];
+                $result .= '"><i class="' . ((empty($menuitem['css'])) ? "fa fa-circle-o" : $menuitem['css']) . '"></i>';
+                $result .= ($is_node || $depth == 1) ? '<span>' . $name . '</span>' : $name; 
+                $result .= ($is_node) ? '<i class="fa fa-angle-right"></i>' : ''; 
+                $result .= '</a>';
+
+                ++$counter;
+            }
+
+            return $result . str_repeat('</li></ul>',$depth); 
       }
 }
